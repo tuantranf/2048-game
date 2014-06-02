@@ -14,12 +14,23 @@
     CGFloat _columnHeight;
     CGFloat _tileMarginVertical;
     CGFloat _tileMarginHorizontal;
+    
     NSMutableArray *_gridArray;
     NSNull *_noTile;
 }
 
 - (void)didLoadFromCCB {
     [self setupBackground];
+    
+    _noTile = [NSNull null];
+    _gridArray = [NSMutableArray array];
+    for (int i = 0; i < GRID_SIZE; i++) {
+        _gridArray[i] = [NSMutableArray array];
+        for (int j = 0; j < GRID_SIZE; j++) {
+            _gridArray[i][j] = _noTile;
+        }
+    }
+    [self spawnStartTiles];
 }
 
 static const NSInteger GRID_SIZE = 4;
@@ -62,7 +73,7 @@ static const NSInteger START_TILES = 2;
     return CGPointMake(x, y);
 }
 
-- (void)addTIleAtColumn:(NSInteger)column row:(NSInteger)row {
+- (void)addTileAtColumn:(NSInteger)column row:(NSInteger)row {
     Tile *tile = (Tile*) [CCBReader load:@"Tile"];
     _gridArray[column][row] = tile;
     tile.scale = 0.f;
@@ -72,6 +83,25 @@ static const NSInteger START_TILES = 2;
     CCActionScaleTo *scaleUp = [CCActionScaleTo actionWithDuration:0.2f scale:1.f];
     CCActionSequence *sequence = [CCActionSequence actionWithArray:@[delay, scaleUp]];
     [tile runAction:sequence];
+}
+
+- (void)spawnRandomTile {
+    BOOL spawned = FALSE;
+    while (!spawned) {
+        NSInteger randomRow = arc4random() % GRID_SIZE;
+        NSInteger randomColumn = arc4random() % GRID_SIZE;
+        BOOL positionFree = (_gridArray[randomColumn][randomRow] == _noTile);
+        if (positionFree) {
+            [self addTileAtColumn:randomColumn row:randomRow];
+            spawned = TRUE;
+        }
+    }
+}
+
+- (void)spawnStartTiles {
+    for (int i = 0; i < START_TILES; i++) {
+        [self spawnRandomTile];
+    }
 }
 
 @end
