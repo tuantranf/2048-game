@@ -8,6 +8,11 @@
 
 #import "Grid.h"
 #import "Tile.h"
+#import "GameEnd.h"
+
+static const NSInteger GRID_SIZE = 4;
+static const NSInteger START_TILES = 2;
+static const NSInteger WIN_TILE = 2048;
 
 @implementation Grid {
     CGFloat _columnWidth;
@@ -31,10 +36,24 @@
         }
     }
     [self spawnStartTiles];
+    
+    // listen for swipes to the left
+    UISwipeGestureRecognizer *swipeLeft = [[UISwipeGestureRecognizer alloc]initWithTarget:self action:@selector(swipeLeft)];
+    swipeLeft.direction = UISwipeGestureRecognizerDirectionLeft;
+    [[[CCDirector sharedDirector] view] addGestureRecognizer:swipeLeft];
+    // listen for swipes to the right
+    UISwipeGestureRecognizer *swipeRight = [[UISwipeGestureRecognizer alloc]initWithTarget:self action:@selector(swipeRight)];
+    swipeRight.direction = UISwipeGestureRecognizerDirectionRight;
+    [[[CCDirector sharedDirector] view] addGestureRecognizer:swipeRight];
+    // listen for swipes up
+    UISwipeGestureRecognizer *swipeUp = [[UISwipeGestureRecognizer alloc]initWithTarget:self action:@selector(swipeUp)];
+    swipeUp.direction = UISwipeGestureRecognizerDirectionUp;
+    [[[CCDirector sharedDirector] view] addGestureRecognizer:swipeUp];
+    // listen for swipes down
+    UISwipeGestureRecognizer *swipeDown = [[UISwipeGestureRecognizer alloc]initWithTarget:self action:@selector(swipeDown)];
+    swipeDown.direction = UISwipeGestureRecognizerDirectionDown;
+    [[[CCDirector sharedDirector] view] addGestureRecognizer:swipeDown];
 }
-
-static const NSInteger GRID_SIZE = 4;
-static const NSInteger START_TILES = 2;
 
 
 - (void)setupBackground
@@ -101,6 +120,253 @@ static const NSInteger START_TILES = 2;
 - (void)spawnStartTiles {
     for (int i = 0; i < START_TILES; i++) {
         [self spawnRandomTile];
+    }
+}
+
+- (void)move:(CGPoint)direction {
+    BOOL movedTilesThisRound = FALSE;
+    
+    // apply negative vector until reaching boundary, this way we get the tile that is the furthest away
+    //bottom left corner
+    NSInteger currentX = 0;
+    NSInteger currentY = 0;
+    // Move to relevant edge by applying direction until reaching border
+    while ([self indexValid:currentX y:currentY]) {
+        CGFloat newX = currentX + direction.x;
+        CGFloat newY = currentY + direction.y;
+        if ([self indexValid:newX y:newY]) {
+            currentX = newX;
+            currentY = newY;
+        } else {
+            break;
+        }
+    }
+    // store initial row value to reset after completing each column
+    NSInteger initialY = currentY;
+    // define changing of x and y value (moving left, up, down or right?)
+    NSInteger xChange = -direction.x;
+    NSInteger yChange = -direction.y;
+    if (xChange == 0) {
+        xChange = 1;
+    }
+    if (yChange == 0) {
+        yChange = 1;
+    }
+    // visit column for column
+    while ([self indexValid:currentX y:currentY]) {
+        while ([self indexValid:currentX y:currentY]) {
+            // get tile at current index
+            Tile *tile = _gridArray[currentX][currentY];
+            if ([tile isEqual:_noTile]) {
+                // if there is no tile at this index -> skip
+                currentY += yChange;
+                continue;
+            }
+            // store index in temp variables to change them and store new location of this tile
+            NSInteger newX = currentX;
+            NSInteger newY = currentY;
+            /* find the farthest position by iterating in direction of the vector until we reach border of grid or an occupied cell*/
+            while ([self indexValidAndUnoccupied:newX+direction.x y:newY+direction.y]) {
+                newX += direction.x;
+                newY += direction.y;
+            }
+            BOOL performMove = FALSE;
+            /* If we stopped moving in vector direction, but next index in in vector direction is valid,
+             this means the cell is occupied. Let's check if we can merge them */
+            if ([self indexValid:newX+direction.x y:newY+direction.y]) {
+                // get the other tile
+                NSInteger otherTileX = newX + direction.x;
+                NSInteger otherTileY = newY + direction.y;
+                Tile *otherTile = _gridArray[otherTileX][otherTileY];
+                // compare the value of other tile and also check the other tile has been merged this round
+                if (tile.value == otherTile.value && !otherTile.mergedThisRound) {
+                    // merge tiles
+                    [self mergeTileAtIndex:currentX y:currentY withTileAtIndex:otherTileX y:otherTileY];
+                    movedTilesThisRound = TRUE;
+                } else {
+                    // we cannot merge so we want to perform amove
+                    performMove = TRUE;
+                }
+            } else {
+                performMove = TRUE;
+            }
+            
+            if (performMove) {
+                // move tile to furthest position
+                if (newX != currentX || newY != currentY) {
+                    // only move tile if position changed
+                    [self moveTile:tile fromIndex:currentX oldY:currentY newX:newX newY:newY];
+                    movedTilesThisRound = TRUE;
+                }
+            }
+            
+            // move further in this column
+            currentY += yChange;
+        }
+        // move to the next column, start at the inital row
+        currentX += xChange;
+        currentY = initialY;
+    }
+    
+    if (movedTilesThisRound) {
+        [self nextRound];
+    }
+}
+
+- (void)mergeTileAtIndex:(NSInteger)x y:(NSInteger)y withTileAtIndex:(NSInteger)xOtherTile y:(NSInteger)yOtherTile {
+    // 1) update the game data
+    Tile *mergedTile = _gridArray[x][y];
+    Tile *otherTile = _gridArray[xOtherTile][yOtherTile];
+    self.score += mergedTile.value * 2;
+    otherTile.value *= 2;
+    otherTile.mergedThisRound = TRUE;
+    
+    // check if this win conditions occurs
+    if (otherTile.value == WIN_TILE) {
+        [self win];
+    }
+    
+    _gridArray[x][y] = _noTile;
+    // 2) update the UI
+    CGPoint otherTilePosition = [self positionForColumn:xOtherTile row:yOtherTile];
+    CCActionMoveTo *moveTo = [CCActionMoveTo actionWithDuration:0.2f position:otherTilePosition];
+    CCActionRemove *remove = [CCActionRemove action];
+    CCActionCallBlock *mergeTile = [CCActionCallBlock actionWithBlock:^{
+        [otherTile updateValueDisplay];
+    }];
+    CCActionSequence *sequence = [CCActionSequence actionWithArray:@[moveTo, mergeTile, remove]];
+    [mergedTile runAction:sequence];
+}
+
+- (BOOL)indexValid:(NSInteger)x y:(NSInteger)y {
+    BOOL indexValid = TRUE;
+    indexValid &= x >= 0;
+    indexValid &= y >= 0;
+    if (indexValid) {
+        indexValid &= x < (int) [_gridArray count];
+        if (indexValid) {
+            indexValid &= y < (int) [(NSMutableArray*) _gridArray[x] count];
+        }
+    }
+    return indexValid;
+}
+
+- (BOOL)indexValidAndUnoccupied:(NSInteger)x y:(NSInteger)y {
+    BOOL indexValid = [self indexValid:x y:y];
+    if (!indexValid) {
+        return FALSE;
+    }
+    BOOL unoccupied = [_gridArray[x][y] isEqual:_noTile];
+    return unoccupied;
+}
+
+- (void)moveTile:(Tile *)tile fromIndex:(NSInteger)oldX oldY:(NSInteger)oldY newX:(NSInteger)newX newY:(NSInteger)newY {
+    _gridArray[newX][newY] = _gridArray[oldX][oldY];
+    _gridArray[oldX][oldY] = _noTile;
+    CGPoint newPosition = [self positionForColumn:newX row:newY];
+    CCActionMoveTo *moveTo = [CCActionMoveTo actionWithDuration:0.2f position:newPosition];
+    [tile runAction:moveTo];
+}
+
+- (void)nextRound {
+    [self spawnRandomTile];
+    // check if lose condition occurs
+    BOOL movePossible = [self movePossible];
+    if (!movePossible) {
+        [self lose];
+    }
+    for (int i = 0; i < GRID_SIZE; i++) {
+        for (int j = 0; j < GRID_SIZE; j++) {
+            Tile *tile = _gridArray[i][j];
+            if (![tile isEqual:_noTile]) {
+                // reset mergedThisRound flags
+                tile.mergedThisRound = FALSE;
+            }
+        }
+    }
+}
+
+- (void)swipeLeft {
+    // CCLOG(@"swipeLeft");
+    [self move:ccp(-1, 0)];
+}
+
+- (void)swipeRight {
+    // CCLOG(@"swipeRight");
+    [self move:ccp(1, 0)];
+}
+
+- (void)swipeUp {
+    CCLOG(@"swipeUp");
+    [self move:ccp(0, 1)];
+}
+
+- (void)swipeDown {
+    // CCLOG(@"swipeDown");
+    [self move:ccp(0, -1)];
+}
+
+- (void)win {
+    [self endGameWithMessage:@"You win!"];
+}
+
+- (void)lose {
+    [self endGameWithMessage:@"You lose!"];
+}
+
+- (void)endGameWithMessage:(NSString*)message {
+    GameEnd *gameEndPopover = (GameEnd *)[CCBReader load:@"GameEnd"];
+    gameEndPopover.positionType = CCPositionTypeNormalized;
+    gameEndPopover.position = ccp(0.5, 0.5);
+    gameEndPopover.zOrder = INT_MAX;
+    [gameEndPopover setMessage:message score:self.score];
+    [self addChild:gameEndPopover];
+    //    CCLOG(@"%@", message);
+    // reading the current highscore from NSUserDefaults
+    NSNumber *highScore = [[NSUserDefaults standardUserDefaults] objectForKey:@"highscore"];
+    if (self.score > [highScore intValue]) {
+        // update new highscore
+        highScore = [NSNumber numberWithInt:self.score];
+        [[NSUserDefaults standardUserDefaults] setObject:highScore forKey:@"highscore"];
+        // synchronize method on NSUserDefaults to write these changes to disk immediately
+        [[NSUserDefaults standardUserDefaults] synchronize];
+    }
+}
+
+- (BOOL)movePossible {
+    for (int i = 0; i < GRID_SIZE; i++) {
+        for (int j = 0; j < GRID_SIZE; j++) {
+            Tile *tile = _gridArray[i][j];
+            // no tile at this position
+            if ([tile isEqual:_noTile]) {
+                // move posible, we have a free field
+                return TRUE;
+            } else {
+                // there is a tile at this possition. Check if this tile could move
+                Tile *topNeighbour = [self tileForIndex:i y:j+1];
+                Tile *bottomNeighbour = [self tileForIndex:i y:j-1];
+                Tile *leftNeighbour = [self tileForIndex:i-1 y:j];
+                Tile *rightNeighbour = [self tileForIndex:i+1 y:j];
+                NSArray *neighbours = @[topNeighbour, bottomNeighbour, leftNeighbour, rightNeighbour];
+                for (id neighbourTile in neighbours) {
+                    if (neighbourTile != _noTile) {
+                        Tile *neighbour = (Tile *)neighbourTile;
+                        if (neighbour.value == tile.value) {
+                            return TRUE;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return FALSE;
+}
+
+- (id)tileForIndex:(NSInteger)x y:(NSInteger)y {
+    if (![self indexValid:x y:y]) {
+        return _noTile;
+    } else {
+        return _gridArray[x][y];
     }
 }
 

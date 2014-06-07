@@ -2,7 +2,7 @@
 //  MainScene.h
 //  PROJECTNAME
 //
-//  Created by Viktor on 10/10/13.
+//  Created by Minh Tuan on 2014/06/02.
 //  Copyright (c) 2013 Apportable. All rights reserved.
 //
 

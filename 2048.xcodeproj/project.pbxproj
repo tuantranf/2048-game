@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		175462BA193B90520007D856 /* Grid.m in Sources */ = {isa = PBXBuildFile; fileRef = 175462B7193B90520007D856 /* Grid.m */; };
 		175462BB193B90520007D856 /* Tile.m in Sources */ = {isa = PBXBuildFile; fileRef = 175462B9193B90520007D856 /* Tile.m */; };
+		17A9C1021940D1510068B524 /* GameEnd.m in Sources */ = {isa = PBXBuildFile; fileRef = 17A9C1011940D1510068B524 /* GameEnd.m */; };
 		B71F5911188484E7003F4D28 /* iPad-old.png in Resources */ = {isa = PBXBuildFile; fileRef = B71F5907188484E7003F4D28 /* iPad-old.png */; };
 		B71F5912188484E7003F4D28 /* iPad-old@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = B71F5908188484E7003F4D28 /* iPad-old@2x.png */; };
 		B71F5913188484E7003F4D28 /* iPad.png in Resources */ = {isa = PBXBuildFile; fileRef = B71F5909188484E7003F4D28 /* iPad.png */; };
@@ -61,6 +62,8 @@
 		175462B7193B90520007D856 /* Grid.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Grid.m; path = Source/Grid.m; sourceTree = "<group>"; };
 		175462B8193B90520007D856 /* Tile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Tile.h; path = Source/Tile.h; sourceTree = "<group>"; };
 		175462B9193B90520007D856 /* Tile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Tile.m; path = Source/Tile.m; sourceTree = "<group>"; };
+		17A9C1001940D1510068B524 /* GameEnd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GameEnd.h; path = Source/GameEnd.h; sourceTree = "<group>"; };
+		17A9C1011940D1510068B524 /* GameEnd.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = GameEnd.m; path = Source/GameEnd.m; sourceTree = "<group>"; };
 		B71F5907188484E7003F4D28 /* iPad-old.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "iPad-old.png"; path = "Icons/iPad-old.png"; sourceTree = "<group>"; };
 		B71F5908188484E7003F4D28 /* iPad-old@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "iPad-old@2x.png"; path = "Icons/iPad-old@2x.png"; sourceTree = "<group>"; };
 		B71F5909188484E7003F4D28 /* iPad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = iPad.png; path = Icons/iPad.png; sourceTree = "<group>"; };
@@ -130,6 +133,8 @@
 			children = (
 				175462B6193B90520007D856 /* Grid.h */,
 				175462B7193B90520007D856 /* Grid.m */,
+				17A9C1001940D1510068B524 /* GameEnd.h */,
+				17A9C1011940D1510068B524 /* GameEnd.m */,
 				175462B8193B90520007D856 /* Tile.h */,
 				175462B9193B90520007D856 /* Tile.m */,
 				B737893D1807617C0076A88C /* AppDelegate.h */,
@@ -333,6 +338,7 @@
 				B7378994180767190076A88C /* MainScene.m in Sources */,
 				B73789871807631A0076A88C /* main.m in Sources */,
 				175462BB193B90520007D856 /* Tile.m in Sources */,
+				17A9C1021940D1510068B524 /* GameEnd.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -426,7 +432,7 @@
 					"\"Source/libs/cocos2d-iphone/external/ObjectAL\"/**",
 				);
 				INFOPLIST_FILE = Source/Resources/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"-lz",
@@ -459,7 +465,7 @@
 					"\"Source/libs/cocos2d-iphone/external/ObjectAL\"/**",
 				);
 				INFOPLIST_FILE = Source/Resources/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				OTHER_LDFLAGS = (
 					"-lz",
 					"-lsqlite3",
